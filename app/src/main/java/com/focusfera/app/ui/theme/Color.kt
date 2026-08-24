@@ -2,10 +2,22 @@ package com.focusfera.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Identidade principal do Focusfera
+val FocusBlue = Color(0xFF536DFE)
+val FocusBlueDark = Color(0xFF3D52D5)
+val FocusBlueLight = Color(0xFFDDE3FF)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// Cores de apoio
+val FocusGreen = Color(0xFF43A047)
+
+// Tema claro
+val LightBackground = Color(0xFFF9F9FF)
+val LightSurface = Color(0xFFF2F2FA)
+val LightText = Color(0xFF1B1B1F)
+val LightSecondaryText = Color(0xFF5F6069)
+
+// Tema escuro
+val DarkBackground = Color(0xFF111318)
+val DarkSurface = Color(0xFF1B1D23)
+val DarkText = Color(0xFFE4E2E8)
+val DarkSecondaryText = Color(0xFFC6C5D0)
