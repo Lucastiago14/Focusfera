@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import com.focusfera.app.navigation.BottomNavigationBar
 import com.focusfera.app.navigation.FocusferaNavHost
 import com.focusfera.app.ui.theme.FocusferaTheme
 
@@ -25,7 +26,12 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 Scaffold(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    bottomBar = {
+                        BottomNavigationBar(
+                            navController = navController
+                        )
+                    }
                 ) { innerPadding ->
 
                     FocusferaNavHost(
