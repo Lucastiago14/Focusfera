@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import com.focusfera.app.ui.home.HomeScreen
+import androidx.navigation.compose.rememberNavController
+import com.focusfera.app.navigation.FocusferaNavHost
 import com.focusfera.app.ui.theme.FocusferaTheme
 
 class MainActivity : ComponentActivity() {
@@ -21,11 +22,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             FocusferaTheme {
 
+                val navController = rememberNavController()
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
 
-                    HomeScreen(
+                    FocusferaNavHost(
+                        navController = navController,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding)
