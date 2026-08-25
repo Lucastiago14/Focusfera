@@ -2,13 +2,19 @@ package com.focusfera.app.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.focusfera.app.data.local.database.FocusferaDatabase
+import com.focusfera.app.data.repository.SubjectRepository
 import com.focusfera.app.ui.home.HomeScreen
 import com.focusfera.app.ui.settings.SettingsScreen
 import com.focusfera.app.ui.statistics.StatisticsScreen
 import com.focusfera.app.ui.subjects.SubjectsScreen
+import com.focusfera.app.ui.subjects.viewmodel.SubjectsViewModel
+import com.focusfera.app.ui.subjects.viewmodel.SubjectsViewModelFactory
 
 @Composable
 fun FocusferaNavHost(
@@ -26,7 +32,27 @@ fun FocusferaNavHost(
         }
 
         composable(Screen.Subjects.route) {
-            SubjectsScreen()
+
+            val context = LocalContext.current
+
+            val database =
+                FocusferaDatabase.getDatabase(context)
+
+            val repository =
+                SubjectRepository(
+                    database.subjectDao()
+                )
+
+            val viewModel: SubjectsViewModel =
+                viewModel(
+                    factory = SubjectsViewModelFactory(
+                        repository = repository
+                    )
+                )
+
+            SubjectsScreen(
+                viewModel = viewModel
+            )
         }
 
         composable(Screen.Statistics.route) {
