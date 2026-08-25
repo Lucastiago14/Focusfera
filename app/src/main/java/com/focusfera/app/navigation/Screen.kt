@@ -1,0 +1,14 @@
+package com.focusfera.app.navigation
+
+sealed class Screen(
+    val route: String
+) {
+
+    data object Home : Screen("home")
+
+    data object Subjects : Screen("subjects")
+
+    data object Statistics : Screen("statistics")
+
+    data object Settings : Screen("settings")
+}
