@@ -25,11 +25,27 @@ class SubjectsViewModel(
     fun addSubject(
         name: String,
         color: Long
-    ) {
+    ): Boolean {
+
         val trimmedName = name.trim()
 
         if (trimmedName.isBlank()) {
-            return
+            return false
+        }
+
+        if (trimmedName.length > MAX_SUBJECT_NAME_LENGTH) {
+            return false
+        }
+
+        val alreadyExists = subjects.value.any { subject ->
+            subject.name.equals(
+                trimmedName,
+                ignoreCase = true
+            )
+        }
+
+        if (alreadyExists) {
+            return false
         }
 
         viewModelScope.launch {
@@ -40,17 +56,57 @@ class SubjectsViewModel(
                 )
             )
         }
+
+        return true
     }
 
-    fun updateSubject(subject: SubjectEntity) {
-        viewModelScope.launch {
-            repository.updateSubject(subject)
+    fun updateSubject(
+        subject: SubjectEntity
+    ): Boolean {
+
+        val trimmedName = subject.name.trim()
+
+        if (trimmedName.isBlank()) {
+            return false
         }
+
+        if (trimmedName.length > MAX_SUBJECT_NAME_LENGTH) {
+            return false
+        }
+
+        val alreadyExists = subjects.value.any { existingSubject ->
+
+            existingSubject.id != subject.id &&
+                    existingSubject.name.equals(
+                        trimmedName,
+                        ignoreCase = true
+                    )
+        }
+
+        if (alreadyExists) {
+            return false
+        }
+
+        viewModelScope.launch {
+            repository.updateSubject(
+                subject.copy(
+                    name = trimmedName
+                )
+            )
+        }
+
+        return true
     }
 
-    fun deleteSubject(subject: SubjectEntity) {
+    fun deleteSubject(
+        subject: SubjectEntity
+    ) {
         viewModelScope.launch {
             repository.deleteSubject(subject)
         }
+    }
+
+    companion object {
+        const val MAX_SUBJECT_NAME_LENGTH = 40
     }
 }

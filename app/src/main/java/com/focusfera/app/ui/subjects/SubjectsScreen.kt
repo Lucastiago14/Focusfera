@@ -1,6 +1,7 @@
 package com.focusfera.app.ui.subjects
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -117,7 +120,10 @@ fun SubjectsScreen(
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
         ) {
-            Text("+")
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Adicionar matéria"
+            )
         }
     }
 
@@ -127,47 +133,59 @@ fun SubjectsScreen(
             initialName = "",
             initialColor = null,
             confirmText = "Salvar",
+            existingSubjects = subjects,
+            editingSubjectId = null,
             onDismiss = {
                 showAddDialog = false
             },
             onConfirm = { name, color ->
-                viewModel.addSubject(
+
+                val success = viewModel.addSubject(
                     name = name,
                     color = color
                 )
 
-                showAddDialog = false
+                if (success) {
+                    showAddDialog = false
+                }
+
+                success
             }
         )
     }
 
     subjectToEdit?.let { subject ->
+
         SubjectFormDialog(
             title = "Editar matéria",
             initialName = subject.name,
             initialColor = subject.color,
             confirmText = "Salvar",
+            existingSubjects = subjects,
+            editingSubjectId = subject.id,
             onDismiss = {
                 subjectToEdit = null
             },
             onConfirm = { name, color ->
-                val trimmedName = name.trim()
 
-                if (trimmedName.isNotBlank()) {
-                    viewModel.updateSubject(
-                        subject.copy(
-                            name = trimmedName,
-                            color = color
-                        )
+                val success = viewModel.updateSubject(
+                    subject.copy(
+                        name = name,
+                        color = color
                     )
+                )
+
+                if (success) {
+                    subjectToEdit = null
                 }
 
-                subjectToEdit = null
+                success
             }
         )
     }
 
     subjectToDelete?.let { subject ->
+
         DeleteSubjectDialog(
             subject = subject,
             onDismiss = {
@@ -190,7 +208,7 @@ private fun EmptySubjectsContent() {
             modifier = Modifier.padding(20.dp)
         ) {
             Text(
-                text = "Nenhuma matéria cadastrada.",
+                text = "Nenhuma matéria cadastrada",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -200,7 +218,7 @@ private fun EmptySubjectsContent() {
             )
 
             Text(
-                text = "Crie sua primeira matéria para começar a acompanhar seu tempo de estudo.",
+                text = "Adicione sua primeira matéria para organizar suas sessões de foco.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -223,6 +241,7 @@ private fun SubjectsList(
                 subject.id
             }
         ) { subject ->
+
             SubjectCard(
                 subject = subject,
                 onEdit = {
@@ -254,15 +273,15 @@ private fun SubjectCard(
                 .fillMaxWidth()
                 .padding(
                     start = 18.dp,
-                    top = 10.dp,
+                    top = 12.dp,
                     end = 6.dp,
-                    bottom = 10.dp
+                    bottom = 12.dp
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(18.dp)
+                    .size(20.dp)
                     .clip(CircleShape)
                     .background(
                         Color(subject.color.toInt())
@@ -273,12 +292,25 @@ private fun SubjectCard(
                 modifier = Modifier.size(14.dp)
             )
 
-            Text(
-                text = subject.name,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
-            )
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = subject.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(
+                    modifier = Modifier.height(2.dp)
+                )
+
+                Text(
+                    text = "0 min estudados",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Box {
                 IconButton(
@@ -329,11 +361,13 @@ private fun SubjectFormDialog(
     initialName: String,
     initialColor: Long?,
     confirmText: String,
+    existingSubjects: List<SubjectEntity>,
+    editingSubjectId: Long?,
     onDismiss: () -> Unit,
     onConfirm: (
         name: String,
         color: Long
-    ) -> Unit
+    ) -> Boolean
 ) {
     val colors = listOf(
         Color(0xFF536DFE),
@@ -355,6 +389,24 @@ private fun SubjectFormDialog(
         )
     }
 
+    var showDuplicateError by remember {
+        mutableStateOf(false)
+    }
+
+    val trimmedName = subjectName.trim()
+
+    val isDuplicate = existingSubjects.any { subject ->
+        subject.id != editingSubjectId &&
+                subject.name.equals(
+                    trimmedName,
+                    ignoreCase = true
+                )
+    }
+
+    val isNameValid =
+        trimmedName.isNotBlank() &&
+                trimmedName.length <= SubjectsViewModel.MAX_SUBJECT_NAME_LENGTH
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -364,13 +416,44 @@ private fun SubjectFormDialog(
             Column {
                 OutlinedTextField(
                     value = subjectName,
-                    onValueChange = {
-                        subjectName = it
+                    onValueChange = { newValue ->
+
+                        if (
+                            newValue.length <=
+                            SubjectsViewModel.MAX_SUBJECT_NAME_LENGTH
+                        ) {
+                            subjectName = newValue
+                            showDuplicateError = false
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
                         Text("Nome")
                     },
+                    supportingText = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            if (showDuplicateError || isDuplicate) {
+                                Text(
+                                    text = "Essa matéria já existe.",
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            } else {
+                                Spacer(
+                                    modifier = Modifier.size(1.dp)
+                                )
+                            }
+
+                            Text(
+                                text =
+                                    "${subjectName.length}/" +
+                                            "${SubjectsViewModel.MAX_SUBJECT_NAME_LENGTH}"
+                            )
+                        }
+                    },
+                    isError = showDuplicateError || isDuplicate,
                     singleLine = true
                 )
 
@@ -401,16 +484,36 @@ private fun SubjectFormDialog(
 
                         Box(
                             modifier = Modifier
-                                .size(
-                                    if (isSelected) 40.dp
-                                    else 32.dp
-                                )
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(color)
+                                .then(
+                                    if (isSelected) {
+                                        Modifier.border(
+                                            width = 3.dp,
+                                            color = MaterialTheme
+                                                .colorScheme
+                                                .onSurface,
+                                            shape = CircleShape
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                )
                                 .clickable {
                                     selectedColor = colorValue
-                                }
-                        )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Cor selecionada",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -418,12 +521,22 @@ private fun SubjectFormDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    onConfirm(
-                        subjectName,
+
+                    if (isDuplicate) {
+                        showDuplicateError = true
+                        return@Button
+                    }
+
+                    val success = onConfirm(
+                        trimmedName,
                         selectedColor
                     )
+
+                    if (!success) {
+                        showDuplicateError = true
+                    }
                 },
-                enabled = subjectName.isNotBlank()
+                enabled = isNameValid && !isDuplicate
             ) {
                 Text(confirmText)
             }
@@ -452,7 +565,9 @@ private fun DeleteSubjectDialog(
         },
         text = {
             Text(
-                text = "Tem certeza que deseja excluir \"${subject.name}\"?"
+                text =
+                    "Tem certeza que deseja excluir " +
+                            "\"${subject.name}\"?"
             )
         },
         confirmButton = {
