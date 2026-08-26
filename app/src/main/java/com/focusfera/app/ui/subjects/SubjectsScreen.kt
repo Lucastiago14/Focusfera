@@ -16,10 +16,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -50,6 +56,14 @@ fun SubjectsScreen(
 
     var showAddDialog by remember {
         mutableStateOf(false)
+    }
+
+    var subjectToEdit by remember {
+        mutableStateOf<SubjectEntity?>(null)
+    }
+
+    var subjectToDelete by remember {
+        mutableStateOf<SubjectEntity?>(null)
     }
 
     Box(
@@ -84,7 +98,13 @@ fun SubjectsScreen(
                 EmptySubjectsContent()
             } else {
                 SubjectsList(
-                    subjects = subjects
+                    subjects = subjects,
+                    onEdit = { subject ->
+                        subjectToEdit = subject
+                    },
+                    onDelete = { subject ->
+                        subjectToDelete = subject
+                    }
                 )
             }
         }
@@ -97,24 +117,65 @@ fun SubjectsScreen(
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
         ) {
-            Text(
-                text = "+"
-            )
+            Text("+")
         }
     }
 
     if (showAddDialog) {
-        AddSubjectDialog(
+        SubjectFormDialog(
+            title = "Nova matéria",
+            initialName = "",
+            initialColor = null,
+            confirmText = "Salvar",
             onDismiss = {
                 showAddDialog = false
             },
-            onSave = { name, color ->
+            onConfirm = { name, color ->
                 viewModel.addSubject(
                     name = name,
                     color = color
                 )
 
                 showAddDialog = false
+            }
+        )
+    }
+
+    subjectToEdit?.let { subject ->
+        SubjectFormDialog(
+            title = "Editar matéria",
+            initialName = subject.name,
+            initialColor = subject.color,
+            confirmText = "Salvar",
+            onDismiss = {
+                subjectToEdit = null
+            },
+            onConfirm = { name, color ->
+                val trimmedName = name.trim()
+
+                if (trimmedName.isNotBlank()) {
+                    viewModel.updateSubject(
+                        subject.copy(
+                            name = trimmedName,
+                            color = color
+                        )
+                    )
+                }
+
+                subjectToEdit = null
+            }
+        )
+    }
+
+    subjectToDelete?.let { subject ->
+        DeleteSubjectDialog(
+            subject = subject,
+            onDismiss = {
+                subjectToDelete = null
+            },
+            onConfirm = {
+                viewModel.deleteSubject(subject)
+                subjectToDelete = null
             }
         )
     }
@@ -149,7 +210,9 @@ private fun EmptySubjectsContent() {
 
 @Composable
 private fun SubjectsList(
-    subjects: List<SubjectEntity>
+    subjects: List<SubjectEntity>,
+    onEdit: (SubjectEntity) -> Unit,
+    onDelete: (SubjectEntity) -> Unit
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -161,7 +224,13 @@ private fun SubjectsList(
             }
         ) { subject ->
             SubjectCard(
-                subject = subject
+                subject = subject,
+                onEdit = {
+                    onEdit(subject)
+                },
+                onDelete = {
+                    onDelete(subject)
+                }
             )
         }
     }
@@ -169,15 +238,26 @@ private fun SubjectsList(
 
 @Composable
 private fun SubjectCard(
-    subject: SubjectEntity
+    subject: SubjectEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
+    var menuExpanded by remember {
+        mutableStateOf(false)
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(
+                    start = 18.dp,
+                    top = 10.dp,
+                    end = 6.dp,
+                    bottom = 10.dp
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -195,17 +275,62 @@ private fun SubjectCard(
 
             Text(
                 text = subject.name,
+                modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
+
+            Box {
+                IconButton(
+                    onClick = {
+                        menuExpanded = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Opções da matéria"
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = {
+                        menuExpanded = false
+                    }
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("Editar")
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onEdit()
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text("Excluir")
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onDelete()
+                        }
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun AddSubjectDialog(
+private fun SubjectFormDialog(
+    title: String,
+    initialName: String,
+    initialColor: Long?,
+    confirmText: String,
     onDismiss: () -> Unit,
-    onSave: (
+    onConfirm: (
         name: String,
         color: Long
     ) -> Unit
@@ -219,22 +344,21 @@ private fun AddSubjectDialog(
         Color(0xFF00897B)
     )
 
-    var subjectName by remember {
-        mutableStateOf("")
+    var subjectName by remember(initialName) {
+        mutableStateOf(initialName)
     }
 
-    var selectedColor by remember {
+    var selectedColor by remember(initialColor) {
         mutableLongStateOf(
-            colors.first().toArgb().toLong()
+            initialColor
+                ?: colors.first().toArgb().toLong()
         )
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                text = "Nova matéria"
-            )
+            Text(title)
         },
         text = {
             Column {
@@ -245,9 +369,7 @@ private fun AddSubjectDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text(
-                            text = "Nome"
-                        )
+                        Text("Nome")
                     },
                     singleLine = true
                 )
@@ -286,8 +408,7 @@ private fun AddSubjectDialog(
                                 .clip(CircleShape)
                                 .background(color)
                                 .clickable {
-                                    selectedColor =
-                                        colorValue
+                                    selectedColor = colorValue
                                 }
                         )
                     }
@@ -297,27 +418,56 @@ private fun AddSubjectDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    onSave(
+                    onConfirm(
                         subjectName,
                         selectedColor
                     )
                 },
                 enabled = subjectName.isNotBlank()
             ) {
-                Text(
-                    text = "Salvar"
-                )
+                Text(confirmText)
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text(
-                    text = "Cancelar"
-                )
+                Text("Cancelar")
             }
         },
         shape = RoundedCornerShape(24.dp)
+    )
+}
+
+@Composable
+private fun DeleteSubjectDialog(
+    subject: SubjectEntity,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Excluir matéria?")
+        },
+        text = {
+            Text(
+                text = "Tem certeza que deseja excluir \"${subject.name}\"?"
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm
+            ) {
+                Text("Excluir")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancelar")
+            }
+        }
     )
 }
