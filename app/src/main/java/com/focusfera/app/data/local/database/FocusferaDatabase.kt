@@ -6,12 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.focusfera.app.data.local.dao.SubjectDao
 import com.focusfera.app.data.local.entity.SubjectEntity
+import com.focusfera.app.data.local.entity.StudySessionEntity
 
 @Database(
     entities = [
-        SubjectEntity::class
+        SubjectEntity::class,
+        StudySessionEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class FocusferaDatabase : RoomDatabase() {
@@ -30,7 +32,9 @@ abstract class FocusferaDatabase : RoomDatabase() {
                     context.applicationContext,
                     FocusferaDatabase::class.java,
                     "focusfera_database"
-                ).build()
+                )
+                    .addMigrations(MIGRATION_1_2)
+                    .build()
 
                 INSTANCE = instance
 
