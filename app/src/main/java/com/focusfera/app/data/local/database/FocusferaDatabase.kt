@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import com.focusfera.app.data.local.dao.SubjectDao
 import com.focusfera.app.data.local.entity.SubjectEntity
 import com.focusfera.app.data.local.entity.StudySessionEntity
+import com.focusfera.app.data.local.dao.StudySessionDao
 
 @Database(
     entities = [
@@ -19,6 +20,8 @@ import com.focusfera.app.data.local.entity.StudySessionEntity
 abstract class FocusferaDatabase : RoomDatabase() {
 
     abstract fun subjectDao(): SubjectDao
+
+    abstract fun studySessionDao(): StudySessionDao
 
     companion object {
 
