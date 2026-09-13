@@ -23,6 +23,7 @@ import com.focusfera.app.ui.theme.FocusferaTheme
 
 @Composable
 fun HomeScreen(
+    onStartFocus: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -59,9 +60,7 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                // O timer será implementado futuramente.
-            },
+            onClick = onStartFocus,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -109,7 +108,9 @@ fun HomeScreen(
 @Composable
 private fun HomeScreenPreview() {
     FocusferaTheme {
-        HomeScreen()
+        HomeScreen(
+            onStartFocus = {}
+        )
     }
 }
 

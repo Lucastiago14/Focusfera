@@ -1,4 +1,5 @@
 package com.focusfera.app.navigation
+import com.focusfera.app.ui.focus.FocusSetupScreen
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,6 +16,8 @@ import com.focusfera.app.ui.statistics.StatisticsScreen
 import com.focusfera.app.ui.subjects.SubjectsScreen
 import com.focusfera.app.ui.subjects.viewmodel.SubjectsViewModel
 import com.focusfera.app.ui.subjects.viewmodel.SubjectsViewModelFactory
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun FocusferaNavHost(
@@ -28,7 +31,13 @@ fun FocusferaNavHost(
     ) {
 
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onStartFocus = {
+                    navController.navigate(
+                        Screen.FocusSetup.route
+                    )
+                }
+            )
         }
 
         composable(Screen.Subjects.route) {
@@ -61,6 +70,41 @@ fun FocusferaNavHost(
 
         composable(Screen.Settings.route) {
             SettingsScreen()
+        }
+        composable(Screen.FocusSetup.route) {
+
+            val context = LocalContext.current
+
+            val database =
+                FocusferaDatabase.getDatabase(context)
+
+            val repository =
+                SubjectRepository(
+                    database.subjectDao()
+                )
+
+            val viewModel: SubjectsViewModel =
+                viewModel(
+                    factory = SubjectsViewModelFactory(
+                        repository = repository
+                    )
+                )
+
+            val subjects by
+            viewModel.subjects.collectAsStateWithLifecycle()
+
+            FocusSetupScreen(
+                subjects = subjects,
+                onStartTimer = {
+                    // Será implementado na fase do timer.
+                },
+                onStartPomodoro = {
+                    // Será implementado depois.
+                },
+                onStartStopwatch = {
+                    // Será implementado depois.
+                }
+            )
         }
     }
 }
