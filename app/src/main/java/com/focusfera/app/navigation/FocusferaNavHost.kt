@@ -18,6 +18,11 @@ import com.focusfera.app.ui.subjects.viewmodel.SubjectsViewModel
 import com.focusfera.app.ui.subjects.viewmodel.SubjectsViewModelFactory
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.focusfera.app.ui.focus.FocusMode
+import com.focusfera.app.ui.focus.FocusTimerScreen
+import com.focusfera.app.ui.focus.viewmodel.FocusTimerViewModel
 
 @Composable
 fun FocusferaNavHost(
@@ -71,6 +76,94 @@ fun FocusferaNavHost(
         composable(Screen.Settings.route) {
             SettingsScreen()
         }
+
+        composable(
+            route = Screen.FocusTimer.route,
+            arguments = listOf(
+                navArgument("subjectId") {
+                    type = NavType.LongType
+                },
+                navArgument("focusMode") {
+                    type = NavType.StringType
+                },
+                navArgument("durationMinutes") {
+                    type = NavType.IntType
+                }
+            )
+        ) { backStackEntry ->
+
+            val subjectId =
+                backStackEntry.arguments
+                    ?.getLong("subjectId")
+                    ?: return@composable
+
+            val focusModeName =
+                backStackEntry.arguments
+                    ?.getString("focusMode")
+                    ?: return@composable
+
+            val durationMinutes =
+                backStackEntry.arguments
+                    ?.getInt("durationMinutes")
+                    ?: return@composable
+
+            val focusMode =
+                FocusMode.valueOf(
+                    focusModeName
+                )
+
+            val context =
+                LocalContext.current
+
+            val database =
+                FocusferaDatabase
+                    .getDatabase(context)
+
+            val repository =
+                SubjectRepository(
+                    database.subjectDao()
+                )
+
+            val subjectsViewModel:
+                    SubjectsViewModel =
+                viewModel(
+                    factory =
+                        SubjectsViewModelFactory(
+                            repository
+                        )
+                )
+
+            val subjects by
+            subjectsViewModel
+                .subjects
+                .collectAsStateWithLifecycle()
+
+            val subjectName =
+                subjects
+                    .firstOrNull {
+                        it.id == subjectId
+                    }
+                    ?.name
+                    ?: "Matéria"
+
+            val timerViewModel:
+                    FocusTimerViewModel =
+                viewModel()
+
+            FocusTimerScreen(
+                subjectName = subjectName,
+                focusMode = focusMode,
+                durationMinutes = durationMinutes,
+                viewModel = timerViewModel,
+                onExit = {
+                    navController.popBackStack(
+                        Screen.Home.route,
+                        inclusive = false
+                    )
+                }
+            )
+        }
+
         composable(Screen.FocusSetup.route) {
 
             val context = LocalContext.current
@@ -95,9 +188,18 @@ fun FocusferaNavHost(
 
             FocusSetupScreen(
                 subjects = subjects,
-                onContinue = { subjectId, focusMode, durationMinutes ->
+                onContinue = {
+                        subjectId,
+                        focusMode,
+                        durationMinutes ->
 
-                    // Na próxima fase navegaremos para a tela do timer.
+                    navController.navigate(
+                        Screen.FocusTimer.createRoute(
+                            subjectId = subjectId,
+                            focusMode = focusMode.name,
+                            durationMinutes = durationMinutes
+                        )
+                    )
                 }
             )
         }

@@ -13,4 +13,21 @@ sealed class Screen(
     data object Settings : Screen("settings")
 
     data object FocusSetup : Screen("focus_setup")
+
+    data object FocusTimer :
+        Screen(
+            "focus_timer/{subjectId}/{focusMode}/{durationMinutes}"
+        ) {
+
+        fun createRoute(
+            subjectId: Long,
+            focusMode: String,
+            durationMinutes: Int
+        ): String {
+            return "focus_timer/" +
+                    "$subjectId/" +
+                    "$focusMode/" +
+                    "$durationMinutes"
+        }
+    }
 }
