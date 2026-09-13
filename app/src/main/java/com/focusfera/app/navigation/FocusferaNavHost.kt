@@ -95,14 +95,9 @@ fun FocusferaNavHost(
 
             FocusSetupScreen(
                 subjects = subjects,
-                onStartTimer = {
-                    // Será implementado na fase do timer.
-                },
-                onStartPomodoro = {
-                    // Será implementado depois.
-                },
-                onStartStopwatch = {
-                    // Será implementado depois.
+                onContinue = { subjectId, focusMode, durationMinutes ->
+
+                    // Na próxima fase navegaremos para a tela do timer.
                 }
             )
         }
