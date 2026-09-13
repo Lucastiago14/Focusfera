@@ -29,27 +29,44 @@ class FocusTimerViewModel : ViewModel() {
     val isFinished: StateFlow<Boolean> =
         _isFinished.asStateFlow()
 
+    private val _studiedMillis =
+        MutableStateFlow(0L)
+
+    val studiedMillis: StateFlow<Long> =
+        _studiedMillis.asStateFlow()
+
     private var timerJob: Job? = null
 
     private var endTimeMillis: Long? = null
 
+    private var lastStartTimeMillis: Long? = null
+
     private var pausedRemainingMillis: Long = 0L
+
+    private var preparedDurationMillis: Long = 0L
 
     fun prepareTimer(
         durationMinutes: Int
     ) {
         if (
-            _remainingMillis.value > 0L ||
+            preparedDurationMillis > 0L ||
             _isRunning.value
         ) {
             return
         }
 
-        _remainingMillis.value =
+        preparedDurationMillis =
             durationMinutes * 60_000L
 
+        _remainingMillis.value =
+            preparedDurationMillis
+
         pausedRemainingMillis =
-            _remainingMillis.value
+            preparedDurationMillis
+
+        _studiedMillis.value = 0L
+
+        _isFinished.value = false
     }
 
     fun startTimer() {
@@ -65,6 +82,9 @@ class FocusTimerViewModel : ViewModel() {
         _isFinished.value = false
         _isRunning.value = true
 
+        lastStartTimeMillis =
+            System.currentTimeMillis()
+
         endTimeMillis =
             System.currentTimeMillis() +
                     _remainingMillis.value
@@ -79,6 +99,7 @@ class FocusTimerViewModel : ViewModel() {
         }
 
         updateRemainingTime()
+        accumulateStudiedTime()
 
         pausedRemainingMillis =
             _remainingMillis.value
@@ -86,6 +107,7 @@ class FocusTimerViewModel : ViewModel() {
         _isRunning.value = false
 
         endTimeMillis = null
+        lastStartTimeMillis = null
 
         timerJob?.cancel()
         timerJob = null
@@ -107,6 +129,26 @@ class FocusTimerViewModel : ViewModel() {
         startTimer()
     }
 
+    fun finishEarly() {
+
+        if (_isRunning.value) {
+            updateRemainingTime()
+            accumulateStudiedTime()
+        }
+
+        _isRunning.value = false
+        _isFinished.value = true
+
+        endTimeMillis = null
+        lastStartTimeMillis = null
+
+        pausedRemainingMillis =
+            _remainingMillis.value
+
+        timerJob?.cancel()
+        timerJob = null
+    }
+
     fun resetTimer(
         durationMinutes: Int
     ) {
@@ -117,12 +159,18 @@ class FocusTimerViewModel : ViewModel() {
         _isFinished.value = false
 
         endTimeMillis = null
+        lastStartTimeMillis = null
 
-        _remainingMillis.value =
+        preparedDurationMillis =
             durationMinutes * 60_000L
 
+        _remainingMillis.value =
+            preparedDurationMillis
+
         pausedRemainingMillis =
-            _remainingMillis.value
+            preparedDurationMillis
+
+        _studiedMillis.value = 0L
     }
 
     private fun startTicker() {
@@ -137,6 +185,8 @@ class FocusTimerViewModel : ViewModel() {
 
                 if (_remainingMillis.value <= 0L) {
 
+                    accumulateStudiedTime()
+
                     _remainingMillis.value = 0L
                     pausedRemainingMillis = 0L
 
@@ -144,6 +194,7 @@ class FocusTimerViewModel : ViewModel() {
                     _isFinished.value = true
 
                     endTimeMillis = null
+                    lastStartTimeMillis = null
 
                     break
                 }
@@ -163,6 +214,23 @@ class FocusTimerViewModel : ViewModel() {
 
         _remainingMillis.value =
             remaining.coerceAtLeast(0L)
+    }
+
+    private fun accumulateStudiedTime() {
+
+        val startedAt =
+            lastStartTimeMillis ?: return
+
+        val now =
+            System.currentTimeMillis()
+
+        val elapsed =
+            now - startedAt
+
+        _studiedMillis.value +=
+            elapsed.coerceAtLeast(0L)
+
+        lastStartTimeMillis = now
     }
 
     override fun onCleared() {

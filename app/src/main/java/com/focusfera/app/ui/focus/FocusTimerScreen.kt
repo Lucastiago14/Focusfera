@@ -45,6 +45,9 @@ fun FocusTimerScreen(
     val isFinished by
     viewModel.isFinished.collectAsStateWithLifecycle()
 
+    val studiedMillis by
+    viewModel.studiedMillis.collectAsStateWithLifecycle()
+
     var showExitDialog by remember {
         mutableStateOf(false)
     }
@@ -108,7 +111,7 @@ fun FocusTimerScreen(
             Text(
                 text = when {
                     isFinished ->
-                        "Sessão concluída"
+                        "Sessão finalizada"
 
                     isRunning ->
                         "Foco em andamento"
@@ -117,6 +120,15 @@ fun FocusTimerScreen(
                         "Pronto para começar"
                 },
                 style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
+            Text(
+                text = "Tempo estudado: ${formatStudyTime(studiedMillis)}",
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -148,6 +160,23 @@ fun FocusTimerScreen(
                             "Continuar"
                         }
                     )
+                    if (
+                        remainingMillis <
+                        durationMinutes * 60_000L
+                    ) {
+                        Spacer(
+                            modifier = Modifier.height(12.dp)
+                        )
+
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.finishEarly()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Finalizar agora")
+                        }
+                    }
                 }
 
             } else if (isRunning) {
@@ -159,6 +188,18 @@ fun FocusTimerScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Pausar")
+                }
+                Spacer(
+                    modifier = Modifier.height(12.dp)
+                )
+
+                OutlinedButton(
+                    onClick = {
+                        viewModel.finishEarly()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Finalizar agora")
                 }
             }
 
@@ -259,6 +300,24 @@ private fun formatTime(
 
     val totalSeconds =
         (millis + 999L) / 1000L
+
+    val minutes =
+        totalSeconds / 60L
+
+    val seconds =
+        totalSeconds % 60L
+
+    return "%02d:%02d".format(
+        minutes,
+        seconds
+    )
+}
+private fun formatStudyTime(
+    millis: Long
+): String {
+
+    val totalSeconds =
+        millis / 1000L
 
     val minutes =
         totalSeconds / 60L
